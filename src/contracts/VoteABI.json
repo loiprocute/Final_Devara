@@ -1,0 +1,67 @@
+[
+	{
+		"inputs": [],
+		"name": "name",
+		"outputs": [
+			{
+				"type": "str"
+			}
+		],
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "Manager",
+		"outputs": [
+			{
+				"type": "str"
+			}
+		],
+		"readonly": "0x1",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"name": "name",
+				"type": "str"
+			},
+			{
+				"name": "party",
+				"type": "str"
+			},
+			{
+				"name": "qual",
+				"type": "str"
+			},
+			{
+				"name": "imgURL",
+				"type": "str"
+			}
+		],
+		"name": "addCandidate",
+		"outputs": [],
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"name": "_id",
+				"type": "int"
+			}
+		],
+		"name": "Vote",
+		"outputs": [],
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "electionResult",
+		"outputs": [
+			{
+				"type": "dict"
+			}
+		],
+		"type": "function"
+	}
+]

@@ -1,0 +1,22 @@
+.CandidateVotesTable {
+    margin: 1em ;
+    display: flex;
+    flex-direction: column;
+}
+
+.CandidateVotesHeader,
+.CandidateVotesRow {
+    display: flex;
+}
+
+.CandidateVotesHeader div,
+.CandidateVotesRow div {
+    flex: 1;
+    padding: 0.2rem 0.4em;
+    border: 1px solid #12130f;
+}
+
+.CandidateVotesHeader {
+    background-color: #6b5b95;
+    color: white;
+}
