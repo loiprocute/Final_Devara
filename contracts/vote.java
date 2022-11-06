@@ -1,4 +1,18 @@
-
+/*
+ * Copyright 2020 ICONLOOP Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.iconloop.score.example;
 import java.math.BigInteger;
 // package mypack;
@@ -6,8 +20,10 @@ import java.math.BigInteger;
 import java.util.*;
 import score.Context;
 import score.Address;
+import score.ArrayDB;
 import score.DictDB;
 import score.VarDB;
+import score.BranchDB;
 import score.annotation.EventLog;
 import score.annotation.External;
 import score.annotation.Optional;
@@ -15,29 +31,7 @@ import score.annotation.Payable;
 
 
 
-class Candidate{
-    
-    public int id ;
-    public String name;
-    public int votes;
-    public String party;
-    public String qualification;
-    public String imageurl;
-    public Candidate(int id,String name,int votes,String party,String qualification,String imageurl){
-        this.id=id;
-        this.name=name;
-        this.votes=votes;
-        this.party=party;
-        this.qualification=qualification;
-        this.imageurl=imageurl;
-    }
-}
-class Voter { 
-    public Address voterAddr ;
-    public Voter(Address _addr){
-        this.voterAddr=_addr;
-    }
-}
+
 
 
 public class vote {
@@ -45,75 +39,132 @@ public class vote {
     
 
     public String name ;
-    public int candidatesCount;
     public Address manager;
-    public int  votersCount;
-    //Hashtable<Integer, Candidate> candidates = new Hashtable<Integer, Candidate>();
-    DictDB<Integer, Candidate> candidates = Context.newDictDB("candidates",Candidate.class);
-    //checks if person has already voted
-    //Hashtable<Address, Boolean> hasVoted = new Hashtable<Address, Boolean>();
-    DictDB<Address, Boolean> hasVoted = Context.newDictDB("hasVoted",Boolean.class);
-    //Hashtable<Integer, Voter> voters = new Hashtable<Integer, Voter>();
-    DictDB<Integer, Voter> voters = Context.newDictDB("voters",Voter.class);
-
-    public vote(String name){
-        this.name =name;
+    public int UserCount;
+    private  DictDB<Address, User> Users  = Context.newDictDB("User", User.class);
+    private BranchDB<Address, DictDB<Integer, Pool>> pools = Context.newBranchDB("poolTasks", Pool.class);
+    private BranchDB<Address, BranchDB<Integer,  ArrayDB<Candidate>>> List_Candidate =Context.newBranchDB("Candidates", Candidate.class);
+    public vote(){
+        this.name ="vote";
         this.manager=Context.getOwner();
-        this.candidatesCount=0;
-        this.votersCount=0;
-        Context.println(this.manager.toString());
+        this.UserCount =0;
 
     }
-    // Only Manager can call this function
-    @External()
+    @Payable
+    public void fallback() {}
+    
+    @External(readonly = true)
     public String name(){
-        String  msg="hello " +  this.name + " contract" ;
-        Context.println(msg);
-        return msg;
+
+        return this.name;
+
+    }
+    
+    @External(readonly = true)
+    public Address Manager(){
+        return this.manager;
 
     }
     @External(readonly = true)
-    public String Manager(){
-        return this.manager.toString();
+    public int UserCount(){
+        return this.UserCount;
+    }
+    @External
+    public void registration(Address address){
+        Context.require(Users.get(address)==null,"exist Address");
+        User user =new User(address);
+        Users.set(address,user);
 
     }
-    @External()
-    public void  addCandidate(String name, String party, String qual, String imgURL){
-        Context.require(Context.getCaller().equals(this.manager));
-        this.candidatesCount++;
-        Candidate candidate= new Candidate(candidatesCount, name, 0, party, qual, imgURL);
-        this.candidates.set(candidatesCount,candidate);
-        String msg = "Hello " + name + "!";
-        Context.println(msg);
-
-    }
- 
-    //Except Manager
-    @External()
-    public void Vote(int _id){
+    @External
+    public void createPool(String poolName,String start,String end) {
+        Address owner = Context.getCaller();
+        Context.require(Users.get(owner)!=null,"not exist Address");
         
-        Context.require(!Context.getCaller().equals(this.manager));
-        Context.require(!this.hasVoted.get(Context.getCaller()));
-        this.candidates.get(_id).votes++;
-        this.hasVoted.set(Context.getCaller(),true);
-        this.votersCount++;
-        Voter voter_ =new Voter(Context.getCaller());
-        this.voters.set(this.votersCount,voter_);
+        User user = Users.get(owner);
+        Pool newPool = new Pool(poolName,start,end, owner);
+        pools.at(owner).set(user.getPoolCount()+1,newPool);
+        user.setpoolCount(user.getPoolCount()+1);
+        Users.set(owner,user);
+        
     }
- 
-    // Only Manager can call this function
-    @External()
-    public Candidate electionResult(){
-        Context.require(Context.getCaller().equals(this.manager));
-        int max = this.candidates.get(1).votes;
-        int winnerId =1;
-        for(int j = 2; j <= candidatesCount; j++){
-            if(max < this.candidates.get(j).votes) {
-                max = this.candidates.get(j).votes;
-                winnerId = j;
+    
+    @External
+    public void addCandidate(int indexPool,String name, String qual, String imgURL){
+        Address owner = Context.getCaller();
+        Context.require(pools.at(owner) != null);
+        Context.require(pools.at(owner).get(indexPool) != null);
+        Pool pool=pools.at(owner).get(indexPool);
+
+        Candidate newcandidate= new Candidate(name, qual, imgURL);
+        List_Candidate.at(owner).at(indexPool).add(newcandidate);
+        pool.setcandidatesCount(pool.getCandidateCount()+1);
+        pools.at(owner).set(indexPool,pool);
+
+    }
+
+    @External
+    public void  Vote(Address manager_contract,int indexVote,int indexPool){
+        Address voter = Context.getCaller();
+        Context.require(Users.get(voter) != null,"you are not registered !");
+        Context.require(!voter.equals(manager_contract),"you can't vote !");
+        Context.require(pools.at(manager_contract).get(indexPool) != null,"not exist Pool");
+        Context.require(List_Candidate.at(manager_contract).at(indexPool).get(indexVote-1) != null,"not Exist Candidate");
+
+        Candidate candidate = List_Candidate.at(manager).at(indexPool).get(indexVote-1);
+        candidate.setVotes(candidate.getNumVotes()+1);
+        List_Candidate.at(manager).at(indexPool).set(indexVote-1, candidate);
+
+        
+
+    }
+    
+    @External
+    public String toJsonFormat_Pool(Address address){
+        String list_candidate ="";
+        list_candidate +="{" ;
+        User user = Users.get(address);
+        //Context.println("Count Pool  = " + String.valueOf(user.getPoolCount()));
+        for( int i =1;i <= user.getPoolCount();i++){
+            list_candidate += "\""+pools.at(address).get(i).name()+"\":" +this.toJsonFormat_Candidate(address,i);
+            if (i==user.getPoolCount()){
+                break;
             }
+            list_candidate +=",";
+
         }
-        return this.candidates.get(winnerId);
+        list_candidate +="}" ;
+        Context.println(list_candidate);
+        return list_candidate;
+    }
+    @External
+    public String toJsonFormat_Candidate(Address address,int indexPool){
+        String list_candidate ="";
+        list_candidate +="{" ;
+        int cand= pools.at(address).get(indexPool).getCandidateCount();
+        //Context.println("Count Candidate  = " + String.valueOf(cand));
+        for( int j =0;j < cand;j++){
+            //Context.println( "truoc candidate ");
+            Candidate candidate = List_Candidate.at(address).at(indexPool).get(j);
+            list_candidate += "\""+candidate.getName()+"\":" +candidate.toJsonFormat();
+            if (j==cand-1){
+                break;
+            }
+            list_candidate +=",";
+
+        }
+        list_candidate +="}" ;
+        //Context.println(list_candidate);
+        return list_candidate;
+    }
+    @External
+    public int getNumPoolByAddress(Address address){
+        return  Users.get(address).getPoolCount();
+    }
+
+    @External(readonly = true)
+    public void Login(Address address){
+        Context.require(Users.get(address) != null,"No Registration !!!!!!!!!!!");
     }
 
     
