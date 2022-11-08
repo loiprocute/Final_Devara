@@ -1,23 +1,21 @@
 import React, { useState, useEffect } from "react";
 import "./AddCandidate.css";
-import { setDoc, doc } from "firebase/firestore";
-import db from "../firebase/firebase";
-import IconService from 'icon-sdk-js'
+//import IconService from 'icon-sdk-js'
 const AddCandidate = () => {
   
-  const [name, setName] = useState();
-  const [party, setParty] = useState();
-  const [qual, setQual] = useState();
-  const [ID, setID] = useState();
-  const [wallet, setWallet] = useState();
-  const [photo, setPhoto] = useState();
-  const httpProvider = new IconService.HttpProvider('https://sejong.net.solidwallet.io/api/v3');
-  const iconService = new IconService(httpProvider);
-  const iconConverter = IconService.IconConverter;
-  const iconAmount = IconService.IconAmount;
-  const iconWallet = IconService.IconWallet;
-  const iconBuilder = IconService.IconBuilder;
-  const SignedTransaction = IconService.SignedTransaction;
+  // const [name, setName] = useState();
+  // const [party, setParty] = useState();
+  // const [qual, setQual] = useState();
+  // const [ID, setID] = useState();
+  // const [wallet, setWallet] = useState();
+  // const [photo, setPhoto] = useState();
+  // const httpProvider = new IconService.HttpProvider('https://sejong.net.solidwallet.io/api/v3');
+  // const iconService = new IconService(httpProvider);
+  // const iconConverter = IconService.IconConverter;
+  // const iconAmount = IconService.IconAmount;
+  // const iconWallet = IconService.IconWallet;
+  // const iconBuilder = IconService.IconBuilder;
+  // const SignedTransaction = IconService.SignedTransaction;
   // const handleSubmit = async (e) => {
   //   e.preventDefault();
   //   try {
